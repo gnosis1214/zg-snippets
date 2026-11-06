@@ -1,0 +1,122 @@
+{%- comment -%}
+  Product JSON-LD that follows Google's variant guidance: a ProductGroup with
+  hasVariant for several variants, and a single Product otherwise.
+  Usage: {% render 'zg-product-schema', product: product %}
+{%- endcomment -%}
+{%- if product -%}
+  {%- liquid
+    assign zg_currency = cart.currency.iso_code
+    assign zg_description = product.description | strip_html | strip | truncate: 5000
+    assign zg_rating = product.metafields.reviews.rating.value
+    assign zg_rating_count = product.metafields.reviews.rating_count.value
+
+    assign zg_keys = ''
+    assign zg_varies_by = ''
+    for zg_option in product.options_with_values
+      assign zg_name = zg_option.name | downcase | strip
+      assign zg_key = '-'
+      case zg_name
+        when 'color', 'colour'
+          assign zg_key = 'color'
+        when 'size'
+          assign zg_key = 'size'
+        when 'material'
+          assign zg_key = 'material'
+        when 'pattern'
+          assign zg_key = 'pattern'
+      endcase
+      assign zg_keys = zg_keys | append: zg_key | append: ','
+      if zg_key != '-'
+        assign zg_varies_by = zg_varies_by | append: zg_key | append: ','
+      endif
+    endfor
+    assign zg_keys = zg_keys | split: ','
+    assign zg_varies_by = zg_varies_by | split: ','
+  -%}
+
+  {%- capture zg_shared -%}
+    "description": {{ zg_description | json }}
+    {%- if product.vendor != blank -%}
+      ,"brand": {"@type": "Brand", "name": {{ product.vendor | json }}}
+    {%- endif -%}
+    {%- if zg_rating and zg_rating_count > 0 -%}
+      ,"aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": {{ zg_rating.rating }},
+        "bestRating": {{ zg_rating.scale_max }},
+        "ratingCount": {{ zg_rating_count }}
+      }
+    {%- endif -%}
+  {%- endcapture -%}
+
+  {%- capture zg_variants -%}
+    {%- for zg_variant in product.variants -%}
+      {%- liquid
+        assign zg_image = zg_variant.image | default: product.featured_image
+        assign zg_barcode = zg_variant.barcode | default: ''
+        assign zg_barcode_rest = zg_barcode | remove: '0' | remove: '1' | remove: '2' | remove: '3' | remove: '4' | remove: '5' | remove: '6' | remove: '7' | remove: '8' | remove: '9'
+        assign zg_title = product.title
+        unless product.has_only_default_variant
+          assign zg_title = product.title | append: ' - ' | append: zg_variant.title
+        endunless
+      -%}
+      {
+        {%- if product.has_only_default_variant -%}
+          "@context": "https://schema.org",
+          {{ zg_shared }},
+        {%- endif -%}
+        "@type": "Product",
+        "name": {{ zg_title | json }}
+        {%- if zg_variant.sku != blank -%}
+          ,"sku": {{ zg_variant.sku | json }}
+        {%- endif -%}
+        {%- if zg_barcode_rest == blank -%}
+          {%- case zg_barcode.size -%}
+            {%- when 8, 12, 13, 14 -%}
+              ,"gtin": {{ zg_barcode | json }}
+          {%- endcase -%}
+        {%- endif -%}
+        {%- if zg_image -%}
+          ,"image": {{ zg_image | image_url: width: 1200 | prepend: 'https:' | json }}
+        {%- endif -%}
+        {%- for zg_key in zg_keys -%}
+          {%- if zg_key != '-' -%}
+            ,{{ zg_key | json }}: {{ zg_variant.options[forloop.index0] | json }}
+          {%- endif -%}
+        {%- endfor -%}
+        ,"offers": {
+          "@type": "Offer",
+          "url": {{ request.origin | append: zg_variant.url | json }},
+          "price": {{ zg_variant.price | divided_by: 100.0 }},
+          "priceCurrency": {{ zg_currency | json }},
+          "availability": "https://schema.org/{% if zg_variant.available %}InStock{% else %}OutOfStock{% endif %}"
+        }
+      }
+      {%- unless forloop.last -%},{%- endunless -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+
+  <script type="application/ld+json">
+    {%- if product.has_only_default_variant -%}
+      {{ zg_variants }}
+    {%- else -%}
+      {
+        "@context": "https://schema.org",
+        "@type": "ProductGroup",
+        "name": {{ product.title | json }},
+        "productGroupID": "{{ product.id }}",
+        "url": {{ request.origin | append: product.url | json }},
+        {{ zg_shared }},
+        {%- if zg_varies_by.size > 0 -%}
+          "variesBy": [
+            {%- for zg_key in zg_varies_by -%}
+              "https://schema.org/{{ zg_key }}"
+              {%- unless forloop.last -%},{%- endunless -%}
+            {%- endfor -%}
+          ],
+        {%- endif -%}
+        "hasVariant": [{{ zg_variants }}]
+      }
+    {%- endif -%}
+  </script>
+{%- endif -%}
