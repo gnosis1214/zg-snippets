@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+wp-config.php
+*.pem
+*.key
+*.sql
+*.sql.gz
+node_modules/
+.DS_Store
+Thumbs.db
+*.log

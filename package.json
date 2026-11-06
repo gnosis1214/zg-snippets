@@ -1,0 +1,15 @@
+{
+  "name": "zg-snippets",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Paste-ready, tested recipes for WordPress, Elementor, Shopify, n8n and tracking work",
+  "license": "MIT",
+  "scripts": {
+    "test": "node scripts/zg-check.mjs"
+  },
+  "devDependencies": {
+    "@shopify/theme-check-node": "^4.0.0",
+    "liquidjs": "^10.30.1"
+  }
+}
