@@ -1,0 +1,12 @@
+# Theme Check config for single files copied into a temporary theme.
+extends: theme-check:recommended
+
+# A recipe is checked on its own, so these whole-theme checks do not apply.
+MissingTemplate:
+  enabled: false
+TranslationKeyExists:
+  enabled: false
+RequiredLayoutThemeObject:
+  enabled: false
+UnusedSnippet:
+  enabled: false
