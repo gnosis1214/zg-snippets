@@ -10,6 +10,8 @@ Every recipe lives in `recipes/<platform>/<name>/`, and its README explains how 
 
 | Recipe | Platform | What it does |
 |---|---|---|
+| [zg-hide-user-enumeration](recipes/wordpress/zg-hide-user-enumeration) | WordPress | Stops anonymous visitors from collecting usernames |
+| [zg-product-schema](recipes/shopify/zg-product-schema) | Shopify | Product JSON-LD that follows Google's variant guidance |
 
 ## Using a recipe
 
